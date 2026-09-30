@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -9,62 +9,44 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface Venture {
-  id: string;
-  name: string;
-  category: string;
-  status: 'active' | 'paused' | 'planning';
-  revenue: number;
-  expenses: number;
-}
-
-const CATEGORIES = ['E-commerce', 'SaaS', 'Freelance', 'Content', 'Investment', 'Other'];
+import {
+  CATEGORIES,
+  newId,
+  nextStatus,
+  parseAmount,
+  totals,
+  validateVenture,
+  type Venture,
+} from '../lib/business';
+import {useVentures} from '../store';
 
 export default function VenturesScreen() {
-  const [ventures, setVentures] = useState<Venture[]>([]);
+  const {items: ventures, save: saveVentures, error} = useVentures();
   const [modalVisible, setModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState('E-commerce');
   const [newRevenue, setNewRevenue] = useState('');
   const [newExpenses, setNewExpenses] = useState('');
 
-  useEffect(() => {
-    loadVentures();
-  }, []);
-
-  const loadVentures = async () => {
-    try {
-      const data = await AsyncStorage.getItem('ventures');
-      if (data) setVentures(JSON.parse(data));
-    } catch (e) {
-      console.error('Failed to load ventures');
-    }
-  };
-
-  const saveVentures = async (updated: Venture[]) => {
-    try {
-      await AsyncStorage.setItem('ventures', JSON.stringify(updated));
-      setVentures(updated);
-    } catch (e) {
-      console.error('Failed to save ventures');
-    }
-  };
-
   const addVenture = () => {
-    if (!newName.trim()) {
-      Alert.alert('Error', 'Please enter a venture name');
+    const problem = validateVenture({
+      name: newName,
+      category: newCategory,
+      revenue: newRevenue,
+      expenses: newExpenses,
+    });
+    if (problem) {
+      Alert.alert('Check the form', problem);
       return;
     }
 
     const venture: Venture = {
-      id: Date.now().toString(),
+      id: newId(),
       name: newName.trim(),
       category: newCategory,
       status: 'active',
-      revenue: parseFloat(newRevenue) || 0,
-      expenses: parseFloat(newExpenses) || 0,
+      revenue: parseAmount(newRevenue) ?? 0,
+      expenses: parseAmount(newExpenses) ?? 0,
     };
 
     saveVentures([venture, ...ventures]);
@@ -75,19 +57,15 @@ export default function VenturesScreen() {
   };
 
   const toggleStatus = (id: string) => {
-    const updated = ventures.map(v => {
-      if (v.id === id) {
-        const nextStatus = v.status === 'active' ? 'paused' : v.status === 'paused' ? 'planning' : 'active';
-        return { ...v, status: nextStatus };
-      }
-      return v;
-    });
+    const updated = ventures.map(v =>
+      v.id === id ? {...v, status: nextStatus(v.status)} : v,
+    );
     saveVentures(updated);
   };
 
   const deleteVenture = (id: string) => {
     Alert.alert('Delete Venture', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
+      {text: 'Cancel', style: 'cancel'},
       {
         text: 'Delete',
         style: 'destructive',
@@ -98,8 +76,7 @@ export default function VenturesScreen() {
     ]);
   };
 
-  const totalRevenue = ventures.reduce((sum, v) => sum + v.revenue, 0);
-  const totalProfit = ventures.reduce((sum, v) => sum + (v.revenue - v.expenses), 0);
+  const {revenue: totalRevenue, profit: totalProfit} = totals(ventures);
 
   return (
     <View style={styles.container}>
@@ -112,18 +89,28 @@ export default function VenturesScreen() {
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Revenue</Text>
-          <Text style={[styles.summaryValue, { color: '#00C896' }]}>
+          <Text style={[styles.summaryValue, {color: '#00C896'}]}>
             ฿{totalRevenue.toLocaleString()}
           </Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Profit</Text>
-          <Text style={[styles.summaryValue, { color: totalProfit >= 0 ? '#00C896' : '#EF4444' }]}>
+          <Text
+            style={[
+              styles.summaryValue,
+              {color: totalProfit >= 0 ? '#00C896' : '#EF4444'},
+            ]}>
             ฿{totalProfit.toLocaleString()}
           </Text>
         </View>
       </View>
+
+      {error && (
+        <Text style={styles.errorBanner} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
 
       {/* Ventures List */}
       <ScrollView style={styles.list}>
@@ -131,17 +118,18 @@ export default function VenturesScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>💼</Text>
             <Text style={styles.emptyText}>No ventures yet</Text>
-            <Text style={styles.emptySubtext}>Tap + to add your first venture</Text>
+            <Text style={styles.emptySubtext}>
+              Tap + to add your first venture
+            </Text>
           </View>
         ) : (
           ventures.map(venture => (
             <TouchableOpacity
               key={venture.id}
               style={styles.ventureCard}
-              onLongPress={() => deleteVenture(venture.id)}
-            >
+              onLongPress={() => deleteVenture(venture.id)}>
               <View style={styles.ventureHeader}>
-                <View style={{ flex: 1 }}>
+                <View style={{flex: 1}}>
                   <Text style={styles.ventureName}>{venture.name}</Text>
                   <Text style={styles.ventureCategory}>{venture.category}</Text>
                 </View>
@@ -157,8 +145,7 @@ export default function VenturesScreen() {
                           ? '#EF444420'
                           : '#FFB80020',
                     },
-                  ]}
-                >
+                  ]}>
                   <Text
                     style={[
                       styles.statusText,
@@ -170,8 +157,7 @@ export default function VenturesScreen() {
                             ? '#EF4444'
                             : '#FFB800',
                       },
-                    ]}
-                  >
+                    ]}>
                     {venture.status}
                   </Text>
                 </TouchableOpacity>
@@ -180,13 +166,13 @@ export default function VenturesScreen() {
               <View style={styles.ventureMetrics}>
                 <View style={styles.metric}>
                   <Text style={styles.metricLabel}>Revenue</Text>
-                  <Text style={[styles.metricValue, { color: '#00C896' }]}>
+                  <Text style={[styles.metricValue, {color: '#00C896'}]}>
                     ฿{venture.revenue.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.metric}>
                   <Text style={styles.metricLabel}>Expenses</Text>
-                  <Text style={[styles.metricValue, { color: '#EF4444' }]}>
+                  <Text style={[styles.metricValue, {color: '#EF4444'}]}>
                     ฿{venture.expenses.toLocaleString()}
                   </Text>
                 </View>
@@ -195,9 +181,13 @@ export default function VenturesScreen() {
                   <Text
                     style={[
                       styles.metricValue,
-                      { color: venture.revenue - venture.expenses >= 0 ? '#00C896' : '#EF4444' },
-                    ]}
-                  >
+                      {
+                        color:
+                          venture.revenue - venture.expenses >= 0
+                            ? '#00C896'
+                            : '#EF4444',
+                      },
+                    ]}>
                     ฿{(venture.revenue - venture.expenses).toLocaleString()}
                   </Text>
                 </View>
@@ -210,8 +200,7 @@ export default function VenturesScreen() {
       {/* Add Button */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => setModalVisible(true)}
-      >
+        onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>+ Add Venture</Text>
       </TouchableOpacity>
 
@@ -230,7 +219,10 @@ export default function VenturesScreen() {
             />
 
             <Text style={styles.label}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}>
               {CATEGORIES.map(cat => (
                 <TouchableOpacity
                   key={cat}
@@ -238,14 +230,12 @@ export default function VenturesScreen() {
                     styles.categoryChip,
                     newCategory === cat && styles.categoryChipActive,
                   ]}
-                  onPress={() => setNewCategory(cat)}
-                >
+                  onPress={() => setNewCategory(cat)}>
                   <Text
                     style={[
                       styles.categoryChipText,
                       newCategory === cat && styles.categoryChipTextActive,
-                    ]}
-                  >
+                    ]}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -273,14 +263,12 @@ export default function VenturesScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
+                onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={addVenture}
-              >
+                onPress={addVenture}>
                 <Text style={styles.saveButtonText}>Add Venture</Text>
               </TouchableOpacity>
             </View>
@@ -292,6 +280,13 @@ export default function VenturesScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBanner: {
+    color: '#EF4444',
+    backgroundColor: '#EF444420',
+    padding: 10,
+    marginHorizontal: 16,
+    borderRadius: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: '#0F0F1E',

@@ -1,54 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface Venture {
-  id: string;
-  name: string;
-  category: string;
-  status: 'active' | 'paused' | 'planning';
-  revenue: number;
-  expenses: number;
-}
-
-interface Goal {
-  id: string;
-  title: string;
-  target: number;
-  current: number;
-  deadline: string;
-}
+import React from 'react';
+import {View, Text, ScrollView, StyleSheet} from 'react-native';
+import {goalProgress, topVentures, totals} from '../lib/business';
+import {useGoals, useVentures} from '../store';
 
 export default function DashboardScreen() {
-  const [ventures, setVentures] = useState<Venture[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const v = await AsyncStorage.getItem('ventures');
-      const g = await AsyncStorage.getItem('goals');
-      if (v) setVentures(JSON.parse(v));
-      if (g) setGoals(JSON.parse(g));
-    } catch (e) {
-      console.error('Failed to load data');
-    }
-  };
-
-  const totalRevenue = ventures.reduce((sum, v) => sum + v.revenue, 0);
-  const totalExpenses = ventures.reduce((sum, v) => sum + v.expenses, 0);
-  const profit = totalRevenue - totalExpenses;
-  const activeVentures = ventures.filter(v => v.status === 'active').length;
+  const {items: ventures} = useVentures();
+  const {items: goals} = useGoals();
+  const {
+    revenue: totalRevenue,
+    expenses: totalExpenses,
+    profit,
+    active: activeVentures,
+    margin,
+  } = totals(ventures);
 
   return (
     <ScrollView style={styles.container}>
@@ -59,30 +23,37 @@ export default function DashboardScreen() {
 
       {/* Stats Cards */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statCard, { backgroundColor: '#1E1E2E' }]}>
+        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
           <Text style={styles.statLabel}>Total Revenue</Text>
-          <Text style={[styles.statValue, { color: '#00C896' }]}>
+          <Text style={[styles.statValue, {color: '#00C896'}]}>
             ฿{totalRevenue.toLocaleString()}
           </Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: '#1E1E2E' }]}>
+        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
           <Text style={styles.statLabel}>Expenses</Text>
-          <Text style={[styles.statValue, { color: '#EF4444' }]}>
+          <Text style={[styles.statValue, {color: '#EF4444'}]}>
             ฿{totalExpenses.toLocaleString()}
           </Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: '#1E1E2E' }]}>
+        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
           <Text style={styles.statLabel}>Profit</Text>
-          <Text style={[styles.statValue, { color: profit >= 0 ? '#00C896' : '#EF4444' }]}>
+          <Text
+            style={[
+              styles.statValue,
+              {color: profit >= 0 ? '#00C896' : '#EF4444'},
+            ]}>
             ฿{profit.toLocaleString()}
           </Text>
+          {margin !== null && (
+            <Text style={styles.statLabel}>{margin}% margin</Text>
+          )}
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: '#1E1E2E' }]}>
+        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
           <Text style={styles.statLabel}>Active Ventures</Text>
-          <Text style={[styles.statValue, { color: '#FF6B35' }]}>
+          <Text style={[styles.statValue, {color: '#FF6B35'}]}>
             {activeVentures}
           </Text>
         </View>
@@ -94,27 +65,32 @@ export default function DashboardScreen() {
         {goals.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No goals yet</Text>
-            <Text style={styles.emptySubtext}>Add your first goal to track progress</Text>
+            <Text style={styles.emptySubtext}>
+              Add your first goal to track progress
+            </Text>
           </View>
         ) : (
           goals.slice(0, 3).map(goal => {
-            const progress = (goal.current / goal.target) * 100;
+            const progress = goalProgress(goal);
             return (
               <View key={goal.id} style={styles.goalCard}>
                 <View style={styles.goalHeader}>
                   <Text style={styles.goalTitle}>{goal.title}</Text>
-                  <Text style={styles.goalProgress}>{progress.toFixed(0)}%</Text>
+                  <Text style={styles.goalProgress}>
+                    {progress.toFixed(0)}%
+                  </Text>
                 </View>
                 <View style={styles.progressBar}>
                   <View
                     style={[
                       styles.progressFill,
-                      { width: `${Math.min(progress, 100)}%` },
+                      {width: `${Math.min(progress, 100)}%`},
                     ]}
                   />
                 </View>
                 <Text style={styles.goalMeta}>
-                  ฿{goal.current.toLocaleString()} / ฿{goal.target.toLocaleString()}
+                  ฿{goal.current.toLocaleString()} / ฿
+                  {goal.target.toLocaleString()}
                 </Text>
               </View>
             );
@@ -128,59 +104,56 @@ export default function DashboardScreen() {
         {ventures.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No ventures yet</Text>
-            <Text style={styles.emptySubtext}>Start tracking your business ventures</Text>
+            <Text style={styles.emptySubtext}>
+              Start tracking your business ventures
+            </Text>
           </View>
         ) : (
-          ventures
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5)
-            .map(venture => (
-              <View key={venture.id} style={styles.ventureCard}>
-                <View style={styles.ventureHeader}>
-                  <View>
-                    <Text style={styles.ventureName}>{venture.name}</Text>
-                    <Text style={styles.ventureCategory}>{venture.category}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor:
-                          venture.status === 'active'
-                            ? '#00C89620'
-                            : venture.status === 'paused'
-                            ? '#EF444420'
-                            : '#FFB80020',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color:
-                            venture.status === 'active'
-                              ? '#00C896'
-                              : venture.status === 'paused'
-                              ? '#EF4444'
-                              : '#FFB800',
-                        },
-                      ]}
-                    >
-                      {venture.status}
-                    </Text>
-                  </View>
+          topVentures(ventures).map(venture => (
+            <View key={venture.id} style={styles.ventureCard}>
+              <View style={styles.ventureHeader}>
+                <View>
+                  <Text style={styles.ventureName}>{venture.name}</Text>
+                  <Text style={styles.ventureCategory}>{venture.category}</Text>
                 </View>
-                <View style={styles.ventureStats}>
-                  <Text style={styles.ventureRevenue}>
-                    ฿{venture.revenue.toLocaleString()}
-                  </Text>
-                  <Text style={styles.ventureExpenses}>
-                    -฿{venture.expenses.toLocaleString()}
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor:
+                        venture.status === 'active'
+                          ? '#00C89620'
+                          : venture.status === 'paused'
+                          ? '#EF444420'
+                          : '#FFB80020',
+                    },
+                  ]}>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      {
+                        color:
+                          venture.status === 'active'
+                            ? '#00C896'
+                            : venture.status === 'paused'
+                            ? '#EF4444'
+                            : '#FFB800',
+                      },
+                    ]}>
+                    {venture.status}
                   </Text>
                 </View>
               </View>
-            ))
+              <View style={styles.ventureStats}>
+                <Text style={styles.ventureRevenue}>
+                  ฿{venture.revenue.toLocaleString()}
+                </Text>
+                <Text style={styles.ventureExpenses}>
+                  -฿{venture.expenses.toLocaleString()}
+                </Text>
+              </View>
+            </View>
+          ))
         )}
       </View>
     </ScrollView>
