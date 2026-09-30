@@ -4,6 +4,7 @@ import {
   goalProgress,
   isGoalComplete,
   nextStatus,
+  goalPercentLabel,
   parseAmount,
   parseDeadline,
   parseGoals,
@@ -129,5 +130,26 @@ describe('stored data parsing', () => {
         JSON.stringify([v, {...v, status: 'weird'}, {...v, revenue: 'x'}]),
       ),
     ).toEqual([v]);
+  });
+});
+
+describe('pass 3 edge cases', () => {
+  it('reads a decimal comma as a decimal, not as thousands', () => {
+    expect(parseAmount('7,5')).toBe(7.5);
+    expect(parseAmount('12,50')).toBe(12.5);
+    expect(parseAmount('1,500')).toBe(1500);
+    expect(parseAmount('1,234,567.89')).toBe(1234567.89);
+    expect(parseAmount('1,2,3')).toBeNull();
+    expect(parseAmount('12,5000')).toBeNull();
+  });
+  it('rejects hex and exponent notation and folds full-width digits', () => {
+    expect(parseAmount('0x10')).toBeNull();
+    expect(parseAmount('1e3')).toBeNull();
+    expect(parseAmount('\uFF11\uFF10\uFF10')).toBe(100);
+  });
+  it('never shows 100% for an unfinished goal', () => {
+    expect(goalPercentLabel({current: 996, target: 1000})).toBe('99%');
+    expect(goalPercentLabel({current: 1000, target: 1000})).toBe('100%');
+    expect(goalPercentLabel({current: 5, target: 0})).toBe('0%');
   });
 });

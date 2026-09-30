@@ -50,3 +50,12 @@ Score: 6/10 (was 5/10) — a data-loss bug fixed and lint is now strict; identit
 - Jest: 20 s timeout for cold CI runs.
 - Advisories: no same-major fixes (image-size, ip, fast-xml-parser, decode-uri-component via RN 0.73 tooling) — needs the RN upgrade (P2).
 - Verified: lint (0 warnings), typecheck, jest (14, also `--no-cache`), `npm run bundle:android`.
+
+## Done in this pass (pass 3)
+
+Score: 7.5/10 (was 7/10) — edge-case hunt in `src/lib/business.ts`.
+
+- Bug: `parseAmount` deleted every comma, so a decimal comma "7,5" became 75 and "12,50" became 1250. Commas now count as thousands separators only in groups of three; a single comma with 1–2 decimals is a decimal comma; full-width digits are folded.
+- Bug: goal progress used `toFixed(0)`, so 99.6% showed "100%" on an unfinished goal (dashboard and goals list). `goalPercentLabel` floors.
+- Note: `npm run bundle:android` needs `mkdir -p dist` first (the script does not create it).
+- Verified: lint, typecheck, 17 Jest tests, `react-native bundle` for Android.

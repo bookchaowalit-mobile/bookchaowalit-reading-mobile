@@ -37,13 +37,21 @@ export function newId(now = Date.now(), random = Math.random): string {
 }
 
 /**
- * Parse a money amount typed by the user ("1,500", "฿ 20.5"). Blank is 0;
- * negative, non-numeric or absurd values are rejected with null.
+ * Parse a money amount typed by the user ("1,500", "฿ 20.5", "12,50").
+ * Blank is 0; negative, non-numeric or absurd values are rejected with null.
+ * A comma is a thousands separator only in groups of three ("1,500");
+ * a single comma followed by one or two digits is a decimal comma ("7,5" is
+ * 7.5, not 75 as when every comma was simply deleted).
  */
 export function parseAmount(text: string): number | null {
-  const cleaned = text.replace(/[฿,\s]/g, '');
+  let cleaned = text.normalize('NFKC').replace(/[฿\s]/g, '');
   if (cleaned === '') {
     return 0;
+  }
+  if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(cleaned)) {
+    cleaned = cleaned.replace(/,/g, '');
+  } else if (/^\d+,\d{1,2}$/.test(cleaned)) {
+    cleaned = cleaned.replace(',', '.');
   }
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) {
     return null;
@@ -140,6 +148,16 @@ export function goalProgress(goal: Pick<Goal, 'current' | 'target'>): number {
     return 0;
   }
   return Math.min(100, Math.max(0, (goal.current / goal.target) * 100));
+}
+
+/**
+ * Whole-percent label that never shows "100%" for an unfinished goal
+ * (99.6% used to round up via toFixed(0) while the goal was not complete).
+ */
+export function goalPercentLabel(
+  goal: Pick<Goal, 'current' | 'target'>,
+): string {
+  return `${Math.floor(goalProgress(goal))}%`;
 }
 
 export function isGoalComplete(

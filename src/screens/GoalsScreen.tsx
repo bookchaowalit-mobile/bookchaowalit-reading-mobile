@@ -12,6 +12,7 @@ import {
 import {
   applyGoalDelta,
   daysLeft,
+  goalPercentLabel,
   goalProgress,
   isGoalComplete,
   newId,
@@ -155,7 +156,7 @@ export default function GoalsScreen() {
                         styles.progressPercent,
                         isCompleted ? styles.textGreen : styles.textOrange,
                       ]}>
-                      {progress.toFixed(0)}%
+                      {goalPercentLabel(goal)}
                     </Text>
                   </View>
 

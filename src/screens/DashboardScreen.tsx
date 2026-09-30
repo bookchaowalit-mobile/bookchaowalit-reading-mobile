@@ -1,6 +1,11 @@
 import React from 'react';
 import {View, Text, ScrollView, StyleSheet} from 'react-native';
-import {goalProgress, topVentures, totals} from '../lib/business';
+import {
+  goalPercentLabel,
+  goalProgress,
+  topVentures,
+  totals,
+} from '../lib/business';
 import {useGoals, useVentures} from '../store';
 
 export default function DashboardScreen() {
@@ -77,7 +82,7 @@ export default function DashboardScreen() {
                 <View style={styles.goalHeader}>
                   <Text style={styles.goalTitle}>{goal.title}</Text>
                   <Text style={styles.goalProgress}>
-                    {progress.toFixed(0)}%
+                    {goalPercentLabel(goal)}
                   </Text>
                 </View>
                 <View style={styles.progressBar}>
