@@ -23,26 +23,26 @@ export default function DashboardScreen() {
 
       {/* Stats Cards */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
+        <View style={[styles.statCard, styles.surface]}>
           <Text style={styles.statLabel}>Total Revenue</Text>
-          <Text style={[styles.statValue, {color: '#00C896'}]}>
+          <Text style={[styles.statValue, styles.textGreen]}>
             ฿{totalRevenue.toLocaleString()}
           </Text>
         </View>
 
-        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
+        <View style={[styles.statCard, styles.surface]}>
           <Text style={styles.statLabel}>Expenses</Text>
-          <Text style={[styles.statValue, {color: '#EF4444'}]}>
+          <Text style={[styles.statValue, styles.textRed]}>
             ฿{totalExpenses.toLocaleString()}
           </Text>
         </View>
 
-        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
+        <View style={[styles.statCard, styles.surface]}>
           <Text style={styles.statLabel}>Profit</Text>
           <Text
             style={[
               styles.statValue,
-              {color: profit >= 0 ? '#00C896' : '#EF4444'},
+              profit >= 0 ? styles.textGreen : styles.textRed,
             ]}>
             ฿{profit.toLocaleString()}
           </Text>
@@ -51,9 +51,9 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        <View style={[styles.statCard, {backgroundColor: '#1E1E2E'}]}>
+        <View style={[styles.statCard, styles.surface]}>
           <Text style={styles.statLabel}>Active Ventures</Text>
-          <Text style={[styles.statValue, {color: '#FF6B35'}]}>
+          <Text style={[styles.statValue, styles.textOrange]}>
             {activeVentures}
           </Text>
         </View>
@@ -119,26 +119,20 @@ export default function DashboardScreen() {
                 <View
                   style={[
                     styles.statusBadge,
-                    {
-                      backgroundColor:
-                        venture.status === 'active'
-                          ? '#00C89620'
-                          : venture.status === 'paused'
-                          ? '#EF444420'
-                          : '#FFB80020',
-                    },
+                    venture.status === 'active'
+                      ? styles.badgeActive
+                      : venture.status === 'paused'
+                      ? styles.badgePaused
+                      : styles.badgeOther,
                   ]}>
                   <Text
                     style={[
                       styles.statusText,
-                      {
-                        color:
-                          venture.status === 'active'
-                            ? '#00C896'
-                            : venture.status === 'paused'
-                            ? '#EF4444'
-                            : '#FFB800',
-                      },
+                      venture.status === 'active'
+                        ? styles.textGreen
+                        : venture.status === 'paused'
+                        ? styles.textRed
+                        : styles.textAmber,
                     ]}>
                     {venture.status}
                   </Text>
@@ -161,6 +155,14 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  surface: {backgroundColor: '#1E1E2E'},
+  textAmber: {color: '#FFB800'},
+  badgeActive: {backgroundColor: '#00C89620'},
+  badgePaused: {backgroundColor: '#EF444420'},
+  badgeOther: {backgroundColor: '#FFB80020'},
+  textGreen: {color: '#00C896'},
+  textRed: {color: '#EF4444'},
+  textOrange: {color: '#FF6B35'},
   container: {
     flex: 1,
     backgroundColor: '#0F0F1E',

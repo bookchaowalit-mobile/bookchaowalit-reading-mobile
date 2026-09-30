@@ -59,3 +59,25 @@ it('keeps every mounted screen in sync and clears only app keys', async () => {
   expect(shown(tree)).toBe('0 ventures, 0 goals');
   expect(await AsyncStorage.getItem('unrelated')).toBe('keep me');
 });
+
+it('never overwrites stored data after a failed load', async () => {
+  await AsyncStorage.setItem('ventures', JSON.stringify([v]));
+  (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(
+    new Error('disk busy'),
+  );
+  let errorShown: string | null = null;
+  function Probe() {
+    const {save, error} = useVentures();
+    saveFromOtherTab = save;
+    errorShown = error;
+    return null;
+  }
+  await ReactTestRenderer.act(async () => {
+    ReactTestRenderer.create(<Probe />);
+  });
+  await ReactTestRenderer.act(async () => {
+    await saveFromOtherTab([{...v, id: 'v2', name: 'New'}]);
+  });
+  expect(JSON.parse((await AsyncStorage.getItem('ventures'))!)).toEqual([v]);
+  expect(errorShown).toMatch(/not saved/);
+});

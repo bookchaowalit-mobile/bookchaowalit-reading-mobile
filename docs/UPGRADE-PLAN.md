@@ -22,8 +22,6 @@
 ### P1
 - Edit ventures/goals after creation; custom progress amounts.
 - Monthly revenue/expense history per venture (enables trends/charts).
-- Fix the 26 `react-native/no-inline-styles` warnings, then lint with
-  `--max-warnings=0`.
 
 ### P2
 - Upgrade RN 0.73 -> current (0.73 is out of support) and ESLint 9.
@@ -42,3 +40,13 @@
   and deprecated `@types/react-native`; normalized line endings to LF.
 - README written; CI runs `npm ci`, lint, typecheck, Jest and a Metro Android
   bundle with no failure masking (and no unused Java setup).
+
+## Done in this pass (pass 2)
+
+Score: 6/10 (was 5/10) — a data-loss bug fixed and lint is now strict; identity decision (P0) still open.
+
+- Bug fix (data loss): if the initial AsyncStorage read failed, the next save wrote a list built on the empty in-memory state over the stored ventures/goals. `useStoredList` now refuses to write until a read has succeeded and tells the user why (regression test fails on the old code).
+- Lint: all 26 `react-native/no-inline-styles` warnings removed (named StyleSheet entries for colors, badges and spacers); `npm run lint` now uses `--max-warnings=0`, so CI enforces it.
+- Jest: 20 s timeout for cold CI runs.
+- Advisories: no same-major fixes (image-size, ip, fast-xml-parser, decode-uri-component via RN 0.73 tooling) — needs the RN upgrade (P2).
+- Verified: lint (0 warnings), typecheck, jest (14, also `--no-cache`), `npm run bundle:android`.

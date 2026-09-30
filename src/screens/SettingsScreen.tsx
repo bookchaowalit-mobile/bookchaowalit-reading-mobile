@@ -62,7 +62,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>📊</Text>
-            <View style={{flex: 1}}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Business Dashboard</Text>
               <Text style={styles.featureDesc}>
                 Track revenue, expenses, and profit across all ventures
@@ -72,7 +72,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>💼</Text>
-            <View style={{flex: 1}}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Venture Management</Text>
               <Text style={styles.featureDesc}>
                 Organize and monitor all your business ventures
@@ -82,7 +82,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>🎯</Text>
-            <View style={{flex: 1}}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Goal Tracking</Text>
               <Text style={styles.featureDesc}>
                 Set targets and track progress with visual indicators
@@ -118,12 +118,14 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={{height: 40}} />
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex1: {flex: 1},
+  bottomSpacer: {height: 40},
   container: {
     flex: 1,
     backgroundColor: '#0F0F1E',

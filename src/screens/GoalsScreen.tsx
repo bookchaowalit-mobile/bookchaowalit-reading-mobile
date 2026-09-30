@@ -100,14 +100,14 @@ export default function GoalsScreen() {
         </View>
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, {color: '#00C896'}]}>
+          <Text style={[styles.summaryValue, styles.textGreen]}>
             {completedGoals}
           </Text>
           <Text style={styles.summaryLabel}>Completed</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, {color: '#FF6B35'}]}>
+          <Text style={[styles.summaryValue, styles.textOrange]}>
             {goals.length - completedGoals}
           </Text>
           <Text style={styles.summaryLabel}>In Progress</Text>
@@ -153,7 +153,7 @@ export default function GoalsScreen() {
                     <Text
                       style={[
                         styles.progressPercent,
-                        {color: isCompleted ? '#00C896' : '#FF6B35'},
+                        isCompleted ? styles.textGreen : styles.textOrange,
                       ]}>
                       {progress.toFixed(0)}%
                     </Text>
@@ -163,10 +163,8 @@ export default function GoalsScreen() {
                     <View
                       style={[
                         styles.progressFill,
-                        {
-                          width: `${Math.min(progress, 100)}%`,
-                          backgroundColor: isCompleted ? '#00C896' : '#FF6B35',
-                        },
+                        isCompleted ? styles.fillDone : styles.fillOpen,
+                        {width: `${Math.min(progress, 100)}%`},
                       ]}
                     />
                   </View>
@@ -264,6 +262,10 @@ export default function GoalsScreen() {
 }
 
 const styles = StyleSheet.create({
+  textGreen: {color: '#00C896'},
+  textOrange: {color: '#FF6B35'},
+  fillDone: {backgroundColor: '#00C896'},
+  fillOpen: {backgroundColor: '#FF6B35'},
   errorBanner: {
     color: '#EF4444',
     backgroundColor: '#EF444420',

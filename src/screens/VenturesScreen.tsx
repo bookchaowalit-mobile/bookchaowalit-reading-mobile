@@ -89,7 +89,7 @@ export default function VenturesScreen() {
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Revenue</Text>
-          <Text style={[styles.summaryValue, {color: '#00C896'}]}>
+          <Text style={[styles.summaryValue, styles.textGreen]}>
             ฿{totalRevenue.toLocaleString()}
           </Text>
         </View>
@@ -99,7 +99,7 @@ export default function VenturesScreen() {
           <Text
             style={[
               styles.summaryValue,
-              {color: totalProfit >= 0 ? '#00C896' : '#EF4444'},
+              totalProfit >= 0 ? styles.textGreen : styles.textRed,
             ]}>
             ฿{totalProfit.toLocaleString()}
           </Text>
@@ -129,7 +129,7 @@ export default function VenturesScreen() {
               style={styles.ventureCard}
               onLongPress={() => deleteVenture(venture.id)}>
               <View style={styles.ventureHeader}>
-                <View style={{flex: 1}}>
+                <View style={styles.flex1}>
                   <Text style={styles.ventureName}>{venture.name}</Text>
                   <Text style={styles.ventureCategory}>{venture.category}</Text>
                 </View>
@@ -137,26 +137,20 @@ export default function VenturesScreen() {
                   onPress={() => toggleStatus(venture.id)}
                   style={[
                     styles.statusBadge,
-                    {
-                      backgroundColor:
-                        venture.status === 'active'
-                          ? '#00C89620'
-                          : venture.status === 'paused'
-                          ? '#EF444420'
-                          : '#FFB80020',
-                    },
+                    venture.status === 'active'
+                      ? styles.badgeActive
+                      : venture.status === 'paused'
+                      ? styles.badgePaused
+                      : styles.badgeOther,
                   ]}>
                   <Text
                     style={[
                       styles.statusText,
-                      {
-                        color:
-                          venture.status === 'active'
-                            ? '#00C896'
-                            : venture.status === 'paused'
-                            ? '#EF4444'
-                            : '#FFB800',
-                      },
+                      venture.status === 'active'
+                        ? styles.textGreen
+                        : venture.status === 'paused'
+                        ? styles.textRed
+                        : styles.textAmber,
                     ]}>
                     {venture.status}
                   </Text>
@@ -166,13 +160,13 @@ export default function VenturesScreen() {
               <View style={styles.ventureMetrics}>
                 <View style={styles.metric}>
                   <Text style={styles.metricLabel}>Revenue</Text>
-                  <Text style={[styles.metricValue, {color: '#00C896'}]}>
+                  <Text style={[styles.metricValue, styles.textGreen]}>
                     ฿{venture.revenue.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.metric}>
                   <Text style={styles.metricLabel}>Expenses</Text>
-                  <Text style={[styles.metricValue, {color: '#EF4444'}]}>
+                  <Text style={[styles.metricValue, styles.textRed]}>
                     ฿{venture.expenses.toLocaleString()}
                   </Text>
                 </View>
@@ -181,12 +175,9 @@ export default function VenturesScreen() {
                   <Text
                     style={[
                       styles.metricValue,
-                      {
-                        color:
-                          venture.revenue - venture.expenses >= 0
-                            ? '#00C896'
-                            : '#EF4444',
-                      },
+                      venture.revenue - venture.expenses >= 0
+                        ? styles.textGreen
+                        : styles.textRed,
                     ]}>
                     ฿{(venture.revenue - venture.expenses).toLocaleString()}
                   </Text>
@@ -280,6 +271,13 @@ export default function VenturesScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex1: {flex: 1},
+  textGreen: {color: '#00C896'},
+  textRed: {color: '#EF4444'},
+  textAmber: {color: '#FFB800'},
+  badgeActive: {backgroundColor: '#00C89620'},
+  badgePaused: {backgroundColor: '#EF444420'},
+  badgeOther: {backgroundColor: '#FFB80020'},
   errorBanner: {
     color: '#EF4444',
     backgroundColor: '#EF444420',

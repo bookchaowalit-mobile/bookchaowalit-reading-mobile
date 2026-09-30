@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
   STORAGE_KEYS,
   parseGoals,
@@ -23,10 +23,15 @@ function notify() {
 function useStoredList<T>(key: Key, parse: (json: string | null) => T[]) {
   const [items, setItems] = useState<T[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Writes are allowed only after a successful read: saving a list built on
+  // top of a failed (empty) load would overwrite the user's stored data.
+  const loaded = useRef(false);
 
   const load = useCallback(async () => {
     try {
       setItems(parse(await AsyncStorage.getItem(STORAGE_KEYS[key])));
+      loaded.current = true;
+      setError(null);
     } catch {
       setError('Could not load saved data.');
     }
@@ -43,6 +48,12 @@ function useStoredList<T>(key: Key, parse: (json: string | null) => T[]) {
   const save = useCallback(
     async (next: T[]) => {
       setItems(next);
+      if (!loaded.current) {
+        setError(
+          'Saved data could not be loaded, so this change was not saved (to avoid overwriting it). Restart the app to retry.',
+        );
+        return;
+      }
       try {
         await AsyncStorage.setItem(STORAGE_KEYS[key], JSON.stringify(next));
         setError(null);
