@@ -1,8 +1,8 @@
 import React from 'react';
-import { Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StatusBar } from 'react-native';
+import {StyleSheet, Text} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {StatusBar} from 'react-native';
 import DashboardScreen from './screens/DashboardScreen';
 import VenturesScreen from './screens/VenturesScreen';
 import GoalsScreen from './screens/GoalsScreen';
@@ -32,42 +32,33 @@ export default function App() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-        }}
-      >
+        }}>
         <Tab.Screen
           name="Dashboard"
           component={DashboardScreen}
           options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="home" color={color} size={size} />
-            ),
+            tabBarIcon: tabIcon('home'),
           }}
         />
         <Tab.Screen
           name="Ventures"
           component={VenturesScreen}
           options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="briefcase" color={color} size={size} />
-            ),
+            tabBarIcon: tabIcon('briefcase'),
           }}
         />
         <Tab.Screen
           name="Goals"
           component={GoalsScreen}
           options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="target" color={color} size={size} />
-            ),
+            tabBarIcon: tabIcon('target'),
           }}
         />
         <Tab.Screen
           name="Settings"
           component={SettingsScreen}
           options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="settings" color={color} size={size} />
-            ),
+            tabBarIcon: tabIcon('settings'),
           }}
         />
       </Tab.Navigator>
@@ -75,13 +66,23 @@ export default function App() {
   );
 }
 
-// Simple icon component
-const Icon = ({ name, color, size }: { name: string; color: string; size: number }) => {
-  const icons: Record<string, string> = {
-    home: '🏠',
-    briefcase: '💼',
-    target: '🎯',
-    settings: '⚙️',
-  };
-  return <Text style={{ fontSize: size }}>{icons[name] || '•'}</Text>;
+// Emoji tab icons: the active tab is fully opaque, inactive ones are dimmed.
+const ICONS: Record<string, string> = {
+  home: '🏠',
+  briefcase: '💼',
+  target: '🎯',
+  settings: '⚙️',
 };
+
+const styles = StyleSheet.create({
+  active: {opacity: 1},
+  inactive: {opacity: 0.5},
+});
+
+function tabIcon(name: string) {
+  return ({focused, size}: {focused: boolean; size: number}) => (
+    <Text style={[{fontSize: size}, focused ? styles.active : styles.inactive]}>
+      {ICONS[name] || '•'}
+    </Text>
+  );
+}

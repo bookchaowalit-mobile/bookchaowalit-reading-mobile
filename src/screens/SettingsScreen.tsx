@@ -1,6 +1,13 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import {clearAll} from '../store';
 
 export default function SettingsScreen() {
   const clearData = () => {
@@ -8,16 +15,16 @@ export default function SettingsScreen() {
       'Clear All Data',
       'This will delete all ventures and goals. Are you sure?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {text: 'Cancel', style: 'cancel'},
         {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.clear();
+            await clearAll();
             Alert.alert('Success', 'All data has been cleared');
           },
         },
-      ]
+      ],
     );
   };
 
@@ -55,25 +62,31 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>📊</Text>
-            <View style={{ flex: 1 }}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Business Dashboard</Text>
-              <Text style={styles.featureDesc}>Track revenue, expenses, and profit across all ventures</Text>
+              <Text style={styles.featureDesc}>
+                Track revenue, expenses, and profit across all ventures
+              </Text>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>💼</Text>
-            <View style={{ flex: 1 }}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Venture Management</Text>
-              <Text style={styles.featureDesc}>Organize and monitor all your business ventures</Text>
+              <Text style={styles.featureDesc}>
+                Organize and monitor all your business ventures
+              </Text>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>🎯</Text>
-            <View style={{ flex: 1 }}>
+            <View style={styles.flex1}>
               <Text style={styles.featureTitle}>Goal Tracking</Text>
-              <Text style={styles.featureDesc}>Set targets and track progress with visual indicators</Text>
+              <Text style={styles.featureDesc}>
+                Set targets and track progress with visual indicators
+              </Text>
             </View>
           </View>
         </View>
@@ -84,7 +97,8 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Data</Text>
         <View style={styles.card}>
           <Text style={styles.dataInfo}>
-            All data is stored locally on your device using AsyncStorage. No data is sent to external servers.
+            All data is stored locally on your device using AsyncStorage. No
+            data is sent to external servers.
           </Text>
           <TouchableOpacity style={styles.clearButton} onPress={clearData}>
             <Text style={styles.clearButtonText}>Clear All Data</Text>
@@ -100,18 +114,18 @@ export default function SettingsScreen() {
             Built with React Native CLI{'\n'}
             Part of the SoloEmpire mobile app collection
           </Text>
-          <Text style={styles.copyright}>
-            © 2025 Chaowalit Greepoke
-          </Text>
+          <Text style={styles.copyright}>© 2025 Chaowalit Greepoke</Text>
         </View>
       </View>
 
-      <View style={{ height: 40 }} />
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex1: {flex: 1},
+  bottomSpacer: {height: 40},
   container: {
     flex: 1,
     backgroundColor: '#0F0F1E',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -9,57 +9,57 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  applyGoalDelta,
+  daysLeft,
+  goalPercentLabel,
+  goalProgress,
+  isGoalComplete,
+  newId,
+  parseAmount,
+  validateGoal,
+  type Goal,
+} from '../lib/business';
+import {useGoals} from '../store';
 
-interface Goal {
-  id: string;
-  title: string;
-  target: number;
-  current: number;
-  deadline: string;
+function deadlineLabel(deadline: string): string {
+  if (!deadline.trim()) {
+    return 'No deadline';
+  }
+  const days = daysLeft(deadline);
+  if (days === null) {
+    return deadline;
+  }
+  if (days < 0) {
+    return `${deadline} · ${-days}d overdue`;
+  }
+  return days === 0 ? `${deadline} · due today` : `${deadline} · ${days}d left`;
 }
 
 export default function GoalsScreen() {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const {items: goals, save: saveGoals, error} = useGoals();
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newTarget, setNewTarget] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
 
-  useEffect(() => {
-    loadGoals();
-  }, []);
-
-  const loadGoals = async () => {
-    try {
-      const data = await AsyncStorage.getItem('goals');
-      if (data) setGoals(JSON.parse(data));
-    } catch (e) {
-      console.error('Failed to load goals');
-    }
-  };
-
-  const saveGoals = async (updated: Goal[]) => {
-    try {
-      await AsyncStorage.setItem('goals', JSON.stringify(updated));
-      setGoals(updated);
-    } catch (e) {
-      console.error('Failed to save goals');
-    }
-  };
-
   const addGoal = () => {
-    if (!newTitle.trim() || !newTarget) {
-      Alert.alert('Error', 'Please fill in all fields');
+    const problem = validateGoal({
+      title: newTitle,
+      target: newTarget,
+      deadline: newDeadline,
+    });
+    if (problem) {
+      Alert.alert('Check the form', problem);
       return;
     }
 
     const goal: Goal = {
-      id: Date.now().toString(),
+      id: newId(),
       title: newTitle.trim(),
-      target: parseFloat(newTarget),
+      target: parseAmount(newTarget) ?? 0,
       current: 0,
-      deadline: newDeadline || 'No deadline',
+      deadline: newDeadline.trim(),
     };
 
     saveGoals([goal, ...goals]);
@@ -70,19 +70,15 @@ export default function GoalsScreen() {
   };
 
   const updateProgress = (id: string, amount: number) => {
-    const updated = goals.map(g => {
-      if (g.id === id) {
-        const newCurrent = Math.max(0, Math.min(g.target, g.current + amount));
-        return { ...g, current: newCurrent };
-      }
-      return g;
-    });
+    const updated = goals.map(g =>
+      g.id === id ? applyGoalDelta(g, amount) : g,
+    );
     saveGoals(updated);
   };
 
   const deleteGoal = (id: string) => {
     Alert.alert('Delete Goal', 'Are you sure you want to delete this goal?', [
-      { text: 'Cancel', style: 'cancel' },
+      {text: 'Cancel', style: 'cancel'},
       {
         text: 'Delete',
         style: 'destructive',
@@ -93,7 +89,7 @@ export default function GoalsScreen() {
     ]);
   };
 
-  const completedGoals = goals.filter(g => g.current >= g.target).length;
+  const completedGoals = goals.filter(isGoalComplete).length;
 
   return (
     <View style={styles.container}>
@@ -105,17 +101,25 @@ export default function GoalsScreen() {
         </View>
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, { color: '#00C896' }]}>{completedGoals}</Text>
+          <Text style={[styles.summaryValue, styles.textGreen]}>
+            {completedGoals}
+          </Text>
           <Text style={styles.summaryLabel}>Completed</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, { color: '#FF6B35' }]}>
+          <Text style={[styles.summaryValue, styles.textOrange]}>
             {goals.length - completedGoals}
           </Text>
           <Text style={styles.summaryLabel}>In Progress</Text>
         </View>
       </View>
+
+      {error && (
+        <Text style={styles.errorBanner} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
 
       {/* Goals List */}
       <ScrollView style={styles.list}>
@@ -123,12 +127,14 @@ export default function GoalsScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>🎯</Text>
             <Text style={styles.emptyText}>No goals yet</Text>
-            <Text style={styles.emptySubtext}>Set your first business goal</Text>
+            <Text style={styles.emptySubtext}>
+              Set your first business goal
+            </Text>
           </View>
         ) : (
           goals.map(goal => {
-            const progress = (goal.current / goal.target) * 100;
-            const isCompleted = progress >= 100;
+            const progress = goalProgress(goal);
+            const isCompleted = isGoalComplete(goal);
 
             return (
               <View key={goal.id} style={styles.goalCard}>
@@ -142,10 +148,15 @@ export default function GoalsScreen() {
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressText}>
-                      ฿{goal.current.toLocaleString()} / ฿{goal.target.toLocaleString()}
+                      ฿{goal.current.toLocaleString()} / ฿
+                      {goal.target.toLocaleString()}
                     </Text>
-                    <Text style={[styles.progressPercent, { color: isCompleted ? '#00C896' : '#FF6B35' }]}>
-                      {progress.toFixed(0)}%
+                    <Text
+                      style={[
+                        styles.progressPercent,
+                        isCompleted ? styles.textGreen : styles.textOrange,
+                      ]}>
+                      {goalPercentLabel(goal)}
                     </Text>
                   </View>
 
@@ -153,34 +164,31 @@ export default function GoalsScreen() {
                     <View
                       style={[
                         styles.progressFill,
-                        {
-                          width: `${Math.min(progress, 100)}%`,
-                          backgroundColor: isCompleted ? '#00C896' : '#FF6B35',
-                        },
+                        isCompleted ? styles.fillDone : styles.fillOpen,
+                        {width: `${Math.min(progress, 100)}%`},
                       ]}
                     />
                   </View>
                 </View>
 
                 <View style={styles.goalFooter}>
-                  <Text style={styles.deadline}>📅 {goal.deadline}</Text>
+                  <Text style={styles.deadline}>
+                    📅 {deadlineLabel(goal.deadline)}
+                  </Text>
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => updateProgress(goal.id, 1000)}
-                    >
+                      onPress={() => updateProgress(goal.id, 1000)}>
                       <Text style={styles.actionButtonText}>+฿1K</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => updateProgress(goal.id, 5000)}
-                    >
+                      onPress={() => updateProgress(goal.id, 5000)}>
                       <Text style={styles.actionButtonText}>+฿5K</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => updateProgress(goal.id, 10000)}
-                    >
+                      onPress={() => updateProgress(goal.id, 10000)}>
                       <Text style={styles.actionButtonText}>+฿10K</Text>
                     </TouchableOpacity>
                   </View>
@@ -200,8 +208,7 @@ export default function GoalsScreen() {
       {/* Add Button */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => setModalVisible(true)}
-      >
+        onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>+ Add Goal</Text>
       </TouchableOpacity>
 
@@ -230,7 +237,7 @@ export default function GoalsScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Deadline (e.g. Dec 2025)"
+              placeholder="Deadline YYYY-MM-DD (optional)"
               placeholderTextColor="#6B7280"
               value={newDeadline}
               onChangeText={setNewDeadline}
@@ -239,14 +246,12 @@ export default function GoalsScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
+                onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={addGoal}
-              >
+                onPress={addGoal}>
                 <Text style={styles.saveButtonText}>Create Goal</Text>
               </TouchableOpacity>
             </View>
@@ -258,6 +263,17 @@ export default function GoalsScreen() {
 }
 
 const styles = StyleSheet.create({
+  textGreen: {color: '#00C896'},
+  textOrange: {color: '#FF6B35'},
+  fillDone: {backgroundColor: '#00C896'},
+  fillOpen: {backgroundColor: '#FF6B35'},
+  errorBanner: {
+    color: '#EF4444',
+    backgroundColor: '#EF444420',
+    padding: 10,
+    marginHorizontal: 16,
+    borderRadius: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: '#0F0F1E',
